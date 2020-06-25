@@ -232,15 +232,15 @@ with open(messagefilepath, mode='rb') as f:
         
         print("Done.")
         tree = ET.ElementTree(root)
-        tree.write(folder + 'messages_short_beta.xml')
+        tree.write(folder + 'messages_short_beta.xml', encoding='utf-8')
 
         print("Fixing XML because I was lazy...")
         # Unfilter the created XML.  Hopefully y'all didn't use any greater/less-than symbols!
         readstr = ""
-        with open(folder + 'messages_short_beta.xml','r') as msgfile:
+        with open(folder + 'messages_short_beta.xml','r',encoding='utf-8') as msgfile:
             readstr = msgfile.read()
             readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n   <message ').replace('</messageBMG>', '\n</messageBMG>')
-        with open(folder + 'messages_short_beta.xml','w') as msgfile:
+        with open(folder + 'messages_short_beta.xml','w',encoding='utf-8') as msgfile:
             msgfile.write(readstr)
             print("Done.")
 
