@@ -1,0 +1,147 @@
+"-note","Values are not in hex!"
+"-note2","Any sounds not listed are unused."
+"-note3","A sound will only play if the character who produces it is ever in the level."
+"0","No sound"
+"1","Toad - Hey!"
+"2","Toad - Wahoo!"
+"3","Toad small shout"
+"4","Toad - Oh no."
+"5","Toad - Hello!"
+"6","Toad sleeping"
+"7","Rabbit squeak (trivia - a blank, unused Toad message in Deep Dark uses this sound!)
+"8","Rabbit super high squeak"
+"9","Rabbit double squeak"
+"10","Rabbit double squeak but high"
+"11","Rabbit double squeak but lower"
+"12","Coach penguin - Weh weh wuh wah wah!"
+"14","Coach penguin - Euh wuh wuh... (frustrated)"
+"15","Coach penguin - Heh huh haw waw?"
+"16","(trivia: this is in the INF1 section, but its corresponding message was deleted)"
+"18","Coach penguin - Wuh... weh wuh wuh weh!"
+"19","Coach penguin disappointed"
+"20","Coach penguin - Heh... weh wuh wah weh!"
+"21","Coach penguin - Weh!"
+"22","Penguin happy trill at random pitches"
+"23","Penguin weird trill that sounds like some shaker thing"
+"24","Penguin rattle trill"
+"25","Penguin - Squeak squeak! but higher"
+"26","Penguin trill"
+"27","Penguin long happy squeak"
+"28","Penguin - Squeak squeak!"
+"29","Penguin peaceful trill"
+"30","Penguin - Weew (happy)"
+"31","Penguin long low trill"
+"32","Penguin - Ahh"
+"34","Penguin happy trill at lower pitch"
+"35","Penguin - Aww"
+"36","trivia: in INF1 section but not in game."
+"37","Penguin sigh"
+"38","Guppy - Ghuh huh huh..."
+"39","Guppy - Ghuh huh huh huh!"
+"40","Guppy - Grrrr!"
+"41","Guppy long growl (defeated)"
+"42","Guppy growl"
+"43","Guppy laugh"
+"44","Guppy growl (defeated)"
+"45","Penguin high double chirp"
+"51","Bee - Maybee!"
+"52","Bee
+"53","Bee - bee?"
+"54","Bee (peachcastlefinal)
+"55","Bee
+"56","Bee laughing"
+"57","Bee - Squeak squeak!"
+"58","Luma - weew weew!"
+"59","Luma - oh!"
+"60","Luma happy trill"
+"61","Luma sad squeak"
+"62","Luma
+"65","Luma (star bit 4)
+"66","Luma - oh! but higher"
+"67","Luigi (ghost house)
+"68","Luigi (ghost house)
+"69","Luigi - sorry..."
+"70","Luigi (ghost house)
+"71","Luigi (observatory / star get)
+"72","Toad
+"73","Spooky Speedster
+"74","Spooky Speedster
+"75","Spooky Speedster
+"76","Robot - Bibip!"
+"77","Robot - Aremabot!"
+"78","Robot
+"79","Robot
+"85","Honey Queen
+"86","Honey Queen
+"87","Honey Queen
+"88","Honey Queen
+"89","Honey Queen
+"90","Honey Queen
+"91","Toad (peachcastlefinal)
+"92","Toad relaxed sigh"
+"93","Toad (peachcastlefinal/garden)
+"94","Toad (peachcastlegarden) bragging
+"95","Toad (peachcastlegarden)
+"96","Toad (peachcastlegarden and more)
+"97","Toad (peachcastlegarden)
+"98","Toad (peachcastlegarden)
+"99","Toad (peachcastlegarden)
+"100","Peach - HELP ME!"
+"101","Rosalina - Ugh!"
+"102","Rosalina - Oh! (entusiastic)"
+"103","Rosalina laugh"
+"104","Rosalina long sigh"
+"105","Rosalina short sigh"
+"106","Fat Luma greeting (Hey you! Yeah, you!)
+"107","Fat Luma laugh"
+"109","Toad small yell"
+"110","Toad - Ya Ha!"
+"111","Toad (observatory)
+"112","Fat Luma - OK! (the same as 135)"
+"113","Fat Luma - Squeakysqueak"
+"114","Polari - Ah!"
+"115","Polari - E!"
+"116","Polari - Hmm... (sad)"
+"117","Polari - Ooh"
+"118","Penguru (drip drop)
+"119","Penguru (drip drop)
+"120","Penguru (drip drop)
+"121","Penguru (drip drop)
+"122","Luigi (mostly bee galaxy)
+"123","Luigi - Yeah!"
+"124","Luigi - HELP ME-E!"
+"125","Luigi (observatory)
+"126","Polari
+"127","Rosalina - Let us begin!"
+"128","Rosalina sigh"
+"129","Penguru (underseatunnel - big fish)
+"130","Fat Luma squeak"
+"132","Toad (deep dark)
+"133","Toad (oceanring)
+"134","Toad (oceanring)
+"135","Luma Shop - OK!"
+"136","Luma Shop
+"137","Bowser Jr. - Hahahaha!"
+"138","Bowser evil laugh"
+"139","Bowser - Yarg rarga rarg!"
+"140","Bowser - Warg ho ho... (defeated)"
+"141","Bowser growl"
+"143","Comet Luma monkey sound (happy, fed)
+"144","Rosalina - That's all!"
+"145","Robot (sweet sweet road)
+"146","Toad - Found you!"
+"147","Toad - Maha... Mail!!!"
+"148","Toad - HavAAGH!"
+"149","Toad grumbling"
+"150","Rosalina - So."
+"151","Rosalina - Look! / Hello!"
+"152","Phil Board - Hey!"
+"153","Rosalina - Please..."
+"154","Rosalina - Hmm."
+"155","Rosalina - Oh... (disappointed?)"
+"156","Rosalina sad sigh"
+"157","Rosalina - ah!"
+"158","Rosalina laugh quiet"
+"159","Bee
+"160","Toad gasp"
+"more","unknown"

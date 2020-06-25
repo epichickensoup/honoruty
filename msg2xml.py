@@ -1,7 +1,9 @@
 import struct
 import csv
+import sys
+from pathlib import Path
 import xml.etree.ElementTree as ET
-from xml.dom import minidom
+# from xml.dom import minidom
 
 def getdict(f):
     """Return a dictionary created from a csv file."""
@@ -9,14 +11,16 @@ def getdict(f):
     redict = dict(source)
     return redict
 
+csv_folder = Path('csv')
 # Import all the dictionaries from attatched CSVs
-demoji = getdict('emoji_hex.csv')
-dcolor = getdict('color_hex.csv')
-dpause = getdict('pause_hex.csv')
-doddpause = getdict('oddpause_hex.csv')
-dnumber = getdict('number_hex.csv')
-dnames = getdict('names_hex.csv')
-dsizes = getdict('sizes_hex.csv')
+demoji = getdict(csv_folder / 'emoji_hex.csv')
+dcolor = getdict(csv_folder / 'color_hex.csv')
+dpause = getdict(csv_folder / 'pause_hex.csv')
+doddpause = getdict(csv_folder / 'oddpause_hex.csv')
+dnumber = getdict(csv_folder / 'number_hex.csv')
+dnames = getdict(csv_folder / 'names_hex.csv')
+dsizes = getdict(csv_folder / 'sizes_hex.csv')
+dplumber = getdict(csv_folder / 'plumber_hex.csv')
 
 def getmsgname(id):
     pid = id
@@ -32,7 +36,6 @@ def getmsgname(id):
             b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + msgnum * 8 + i, 1))[0]
     return retname
 
-
 def idtbloffset(o, l):
     """Get bytes of messageid.tbl at offset o for length l."""
     msgidtbl.seek(o)
@@ -47,9 +50,16 @@ def offset(o, l):
         f.seek(o)
     return f.read(l)
 
+def getmsgflw(id):
+    return struct.unpack('>I', offset(48 + (id * slen) + 4, 4))[0]
+
 def getmsginf(id):
     """Given a message ID, returns the INF, including offset and parameters"""
-    return offset(48 + (id * slen), slen)
+    tempinf = struct.unpack('>BBBB', offset(48 + (id * slen) + 8, slen - 8))
+    return tempinf
+
+def getfullmsginf(id) -> tuple:
+    return struct.unpack('>BBBBBBBB', offset(48 + (id * slen) + 4, slen - 4)) # + ("offset", hex(48 + (id * slen) + 4))
 
 def getmsgoff(id):
     """Gets the offset into DAT1 of a message."""
@@ -80,7 +90,7 @@ def getmsg(id):
                     gotlen = doddpause.get(str(pauselen), dpause.get('more'))
                 result = result + 'length="' + gotlen + '"'
             elif idtuple[1] == 2:
-                # It's an animation (?)
+                # It's an animation... or maybe a sound?
                 miniinc = 2
                 animname = ''
                 while miniinc < idtuple[0] - 4:
@@ -98,25 +108,29 @@ def getmsg(id):
                 sizeid = struct.unpack('>H', offset(dat1o + 12 + curmsgoff + inc, 2))[0]
                 result = result + 'name="' + dsizes.get(str(sizeid), demoji.get('more')) + '"'
             elif idtuple[1] == 5:
-                pass
-            elif idtuple[1] == 6:
-                # For binary things that get replaced by a number in-game; this is probably super unstable
-                numid = struct.unpack('>H', offset(dat1o + 12 + curmsgoff + inc, 2))[0]
-                result = result + 'id="' + str(numid) + '"'
-                # dnumber.get(str( ), dpause.get("more"))
-            elif idtuple[1] == 7:
-                pass
+                # The plumber names were already handled... or so I thought
+                plumberid = round(struct.unpack('>I', offset(dat1o + 12 + curmsgoff + inc, 4))[0] / 256)
+                result = result + 'style="' + dplumber.get(str(plumberid), dplumber.get("more")) + '"'
+            elif idtuple[1] == 6 or idtuple[1] == 7:
+                # This is a number or systemtext. They are entered the same way! Also, no information is lost, so hooray!
+                systextuple = struct.unpack('>BBBBBBBBBB', offset(dat1o + 12 + curmsgoff + inc, 10))
+                needed = (systextuple[1], systextuple[9])
+                result = result + 'id="' + str(needed) + '"'
             elif idtuple[1] == 9:
+                #Race time.
+                #Racetime ID seems to always be (0, 5)
+                # unpack = struct.unpack('>BB', offset(dat1o + 8 + 4 + curmsgoff + inc, 2))
+                # result = result + 'id="' + str(unpack) + '"'
                 pass
             elif idtuple[1] == 255:
                 # It's a color identifier
-                # Divide colorid by 256 because it's actually in the 3rd byte, not the 4th
+                # Divide colorid by 256 because it's actually in the 3rd byte, not the 4th (dunno why I did this tbh)
                 colorid = round(struct.unpack('>I', offset(dat1o + 12 + curmsgoff + inc, 4))[0] / 256)
                 result = result + 'name="' + dcolor.get(str(colorid), dcolor.get("more")) + '"'
                 # dcolor.get(, dcolor.get("more"))
             else:
                 # It's gonna show me any binary things I haven't gotten yet
-                print(idtuple)
+                print("Oops, apparently I missed an element with ID " + str(idtuple))
             # So this is super cool... they put the offset to the next normal text in the first byte after 001A.
             # Thus, this will automatically skip any weird characters... our XML is officially valid now!
             # but I should probably still add all the idtuple[1] values I can find for full support
@@ -133,16 +147,24 @@ def getmsg(id):
         bb = struct.unpack('>BB', offset(dat1o + 8 + curmsgoff + inc, 2))
     return result
 
-with open('message.bmg', mode='rb') as f:
+try:
+    messagefilepath = sys.argv[1]
+    folder = messagefilepath[0:messagefilepath.rfind('\\') + 1]
+except:
+    raise Exception("Please input a file.")
+
+with open(messagefilepath, mode='rb') as f:
     # Get the 'file magic' to display the file type
     magic = offset(0,8)
-    print(magic)
+    print(str(magic))
+    if str(magic) != "b'MESGbmg1'":
+        raise Exception("Please input a valid BMG file.")
     totalbytelen = struct.unpack('>I', offset(8, 4))[0]
     print('Length of file in bytes is ' + str(totalbytelen))
     # Total length in bytes is the offset of the FLW1 header
-    print('so I guess it ignores everything past ' + str(offset(totalbytelen, 4)))
-    sections = struct.unpack('>I', offset('0C', 4))[0]
-    print('OK there are ' + str(sections) + ' sections (should be 4 for SMG!)')
+    print('so I guess it ignores everything past ' + str(offset(totalbytelen, 4)) + '?')
+    #sections = struct.unpack('>I', offset('0C', 4))[0]
+    #print('OK there are ' + str(sections) + ' sections (should be 4 for SMG!)')
     slen = struct.unpack('>H', offset('2A',2))[0]
     print('The length of each ID is ' + str(slen))
     print('The first message inf is ' + str(getmsginf(0)))
@@ -152,35 +174,73 @@ with open('message.bmg', mode='rb') as f:
     print('\n')
 
     msgnum = struct.unpack('>H', offset('28', 2))[0]
-    print('There are ' + str(msgnum) + " messages in the file.  Alright, let's do this.")
+    print('There are ' + str(msgnum) + ' messages in the file')
     
-    print("\nTesting escape sequences:")
+    # print("\nTesting escape sequences:")
     print(getmsg(2))
 
+    # This next section makes the xml
+    root = ET.Element('MESGbmg1')
+    with open(folder + 'messageid.tbl','rb') as msgidtbl:
 
-    # This makes the xml, temp disabled to test escape sequences
-    root = ET.Element("messageBMG")
+        # allmsginf = ''
+        # soundid = int(input("Search for sound "))
+        soundid = 255
+        soundsearch = []
+        infsearch = ''
+        infsearchlist = []
+        i = 0
+        while i < msgnum:
+            i = i + 1
+            # allmsginf = allmsginf + "{0:0=4d}".format(i) + ': ' + str(getfullmsginf(i)) + ' ' + getmsgname(i) + '\n'
+            # tempcursoundid = getfullmsginf(i)[2]
+            # if not tempcursoundid in allsoundids:
+            #     allsoundids.append(tempcursoundid)
+            #     allsoundids.append(getmsgname(i))
+            # if tempcursoundid == soundid:
+                # gotname = getmsgname(i)
+                # print(gotname)
+                # soundsearch.append(gotname)
+            thismsginf = getfullmsginf(i)
+            if not thismsginf in infsearchlist:
+                infsearchlist.append(thismsginf)
+                infsearch = infsearch + str(thismsginf) + '\n'
+        with open('allusedinfsections.txt','w') as a:
+            # allsoundids.sort()
+            a.write(infsearch)
+            soundsearch = []
+            infsearch = ''
 
-    with open('messageid.tbl','rb') as msgidtbl:
+        allblanknames = ''
         print("Creating XML from message.bmg...")
         i = 0
         while i < msgnum:
             i = i + 1
-            s = ET.SubElement(root, "message")
-            s.set('name',getmsgname(i))
-            s.text = getmsg(i)
+            temptext = getmsg(i)
+            if temptext != '':
+                s = ET.SubElement(root, 'message')
+                s.set('name', getmsgname(i))
+                s.set('info', str(getfullmsginf(i)))
+                # s.set('flow', str(getmsgflw(i)))    
+                s.text = temptext
+        #     else:
+        #         allblanknames = allblanknames + getmsgname(i) + '\n'
+        
+        # with open('allblankmessagenames.txt','w') as a:
+        #     a.write(allblanknames)
+        #     allblanknames = ''
         
         print("Done.")
         tree = ET.ElementTree(root)
-        tree.write('messages_beta.xml',)
+        tree.write(folder + 'messages_short_beta.xml')
 
         print("Fixing XML because I was lazy...")
         # Unfilter the created XML.  Hopefully y'all didn't use any greater/less-than symbols!
         readstr = ""
-        with open('messages_beta.xml','r') as msgfile:
+        with open(folder + 'messages_short_beta.xml','r') as msgfile:
             readstr = msgfile.read()
-            readstr = readstr.replace('&gt;', '>').replace('&lt;', '<')
-        with open('messages_beta.xml', 'w') as msgfile:
+            readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n   <message ').replace('</messageBMG>', '\n</messageBMG>')
+        with open(folder + 'messages_short_beta.xml','w') as msgfile:
             msgfile.write(readstr)
             print("Done.")
 
