@@ -3,7 +3,6 @@ import csv
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
-# from xml.dom import minidom
 
 def getdict(f):
     """Return a dictionary created from a csv file."""
@@ -59,7 +58,7 @@ def getmsginf(id):
     return tempinf
 
 def getfullmsginf(id) -> tuple:
-    return struct.unpack('>BBBBBBBB', offset(48 + (id * slen) + 4, slen - 4)) # + ("offset", hex(48 + (id * slen) + 4))
+    return struct.unpack('>BBBBBBBB', offset(48 + ((id - 1) * slen) + 4, slen - 4)) # + ("offset", hex(48 + (id * slen) + 4))
 
 def getmsgoff(id):
     """Gets the offset into DAT1 of a message."""
@@ -124,7 +123,7 @@ def getmsg(id):
                 pass
             elif idtuple[1] == 255:
                 # It's a color identifier
-                # Divide colorid by 256 because it's actually in the 3rd byte, not the 4th (dunno why I did this tbh)
+                # Divide colorid by 256 because it's actually in the 3rd byte, not the 4th (dunno why I did it this way)
                 colorid = round(struct.unpack('>I', offset(dat1o + 12 + curmsgoff + inc, 4))[0] / 256)
                 result = result + 'name="' + dcolor.get(str(colorid), dcolor.get("more")) + '"'
                 # dcolor.get(, dcolor.get("more"))
@@ -167,7 +166,7 @@ with open(messagefilepath, mode='rb') as f:
     #print('OK there are ' + str(sections) + ' sections (should be 4 for SMG!)')
     slen = struct.unpack('>H', offset('2A',2))[0]
     print('The length of each ID is ' + str(slen))
-    print('The first message inf is ' + str(getmsginf(0)))
+    print('The first message inf is ' + str(getfullmsginf(0)))
     # Offset of DAT1 section is length of INF1 plus 32 bytes
     dat1o = 32 + struct.unpack('>I', offset(36, 4))[0]
     print('Offset of DAT1 section is ' + str(dat1o))
@@ -217,12 +216,12 @@ with open(messagefilepath, mode='rb') as f:
         while i < msgnum:
             i = i + 1
             temptext = getmsg(i)
-            if temptext != '':
-                s = ET.SubElement(root, 'message')
-                s.set('name', getmsgname(i))
-                s.set('info', str(getfullmsginf(i)))
-                # s.set('flow', str(getmsgflw(i)))    
-                s.text = temptext
+            # if temptext != '':
+            s = ET.SubElement(root, 'message')
+            s.set('name', getmsgname(i))
+            s.set('info', str(getfullmsginf(i)))
+            # s.set('flow', str(getmsgflw(i)))    
+            s.text = temptext
         #     else:
         #         allblanknames = allblanknames + getmsgname(i) + '\n'
         
@@ -232,15 +231,15 @@ with open(messagefilepath, mode='rb') as f:
         
         print("Done.")
         tree = ET.ElementTree(root)
-        tree.write(folder + 'messages_short_beta.xml', encoding='utf-8')
+        tree.write(folder + 'messages_beta.xml', encoding='utf-8')
 
         print("Fixing XML because I was lazy...")
         # Unfilter the created XML.  Hopefully y'all didn't use any greater/less-than symbols!
         readstr = ""
-        with open(folder + 'messages_short_beta.xml','r',encoding='utf-8') as msgfile:
+        with open(folder + 'messages_beta.xml','r',encoding='utf-8') as msgfile:
             readstr = msgfile.read()
-            readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n   <message ').replace('</messageBMG>', '\n</messageBMG>')
-        with open(folder + 'messages_short_beta.xml','w',encoding='utf-8') as msgfile:
+            readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n     <message ').replace('</messageBMG>', '\n</messageBMG>')
+        with open(folder + 'messages_beta.xml','w',encoding='utf-8') as msgfile:
             msgfile.write(readstr)
             print("Done.")
 
