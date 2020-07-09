@@ -1,6 +1,10 @@
 # honoruty
 A message editor for SMG1.
 
-Not done yet.  So far, it will create an XML from `message.bmg` and `messageid.tbl`, which you can extract from `Message.arc`.  Just use the path to your `message.bmg` as the first command-line parameter.
+`msg2xml.py` will convert a valid Super Mario Galaxy 1 message BMG file into a more easily editable XML file.
 
-Now I need to make a script that will convert back from the XML file, as well as figure out if the FLW1 section in `message.bmg` is of much importance.
+`xml2msg.py` does the opposite, and creates a Super Mario Galaxy 1 message BMG file from an XML file.
+
+At the moment, _please do not add entries to the XML file!_ This program does not edit `messageid.tbl` and thus can _not_ properly handle additional messages.  (I'll add that in later!)
+
+If you need to know a name or identifier for any particular thing (color, emoji, whatever), check the files in the CSV folder. You can also edit these to your liking. 
