@@ -150,7 +150,7 @@ try:
     messagefilepath = sys.argv[1]
     folder = messagefilepath[0:messagefilepath.rfind('\\') + 1]
 except:
-    raise Exception("Please input a file.")
+    raise Exception('Please input a file.')
 
 with open(messagefilepath, mode='rb') as f:
     # Get the 'file magic' to display the file type
