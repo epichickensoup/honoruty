@@ -1,9 +1,9 @@
 # honoruty
 A message editor for SMG1.
 
-`msg2xml.py` will convert a valid Super Mario Galaxy 1 message BMG file into a more easily editable XML file.
+`msg2xml.py` will convert a valid Super Mario Galaxy 1 message BMG file into a more easily editable XML file. Simply drop `message.bmg` onto the script, and it'll create a `message.xml` file.
 
-`xml2msg.py` does the opposite, and creates a Super Mario Galaxy 1 message BMG file from an XML file.
+`xml2msg.py` does the opposite, and creates a Super Mario Galaxy 1 message BMG file from an XML file.  Simply drop `message.xml` onto the python script.
 
 
 ---
