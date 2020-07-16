@@ -114,7 +114,7 @@ for event, elem in ET.iterparse(xmlfilepath, events=('start','end')):
                         text.extend(struct.pack('>I', int(dpause.get(elem.get('length')))))
                 elif tag == 2:
                     tx = elem.get('name')
-                    text.append(4 + (len(tx) * 2))
+                    text.append(6 + (len(tx) * 2))
                     text.extend(b'\x02\x00\x00')
                     text.extend(tx.encode('utf_16_be'))
                 elif tag == 3:
