@@ -1,8 +1,48 @@
 import struct
 import csv
+import os
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+try:
+    xmlfilepath = sys.argv[1]
+    folder = xmlfilepath[0:xmlfilepath.rfind('\\') + 1]
+except:
+    raise Exception('Please input a file.')
+
+print('Folder: ' + folder)      # Debug if the path to the file is valid and stuff
+tree = ET.parse(xmlfilepath)
+root = tree.getroot()
+if root.tag != 'MESGbmg1':
+    raise Exception('Please input a valid MESGbmg1 XML file.')
+
+ids = bytearray()
+names = bytearray()
+names.append(0)
+num = 1
+
+# Um yeah I'm doing the message names in a separate function
+
+for event, elem in ET.iterparse(xmlfilepath, events=('start','end')):
+    if elem.tag == 'message' and event == 'start':
+        ids.extend(struct.pack('>I',num)) 
+        num += 1
+        ids.extend(struct.pack('>I',len(names)))
+        names.extend(str(elem.get('name')).encode('utf_8'))
+        names.append(0)
+while (len(names) + len(ids) + 16) % 32 != 0:    # Round of the length of the file by padding it with @ chars
+    names.append(64)
+### Adding messages is still in beta.
+# with open('messageid_beta.tbl', 'wb') as t:
+#     print('Num messages ' + str(num - 1))
+#     t.write(struct.pack('>I', num - 1))  # Add the number of 'entries' which is the first thing in the file
+#     t.write(b'\x00\x00\x00\x02\x00\x00\x00\x28\x00\x00\x00\x08')
+#     t.write(b'\x21\x9D\x43\x62\xFF\xFF\xFF\xFF\x00\x04\x00\x06\x04\x38\x38\xB2') 
+#     t.write(b'\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+#     # Remove the id for that blank message at the end... you'd better keep it in when editing!
+#     t.write(ids[:-8])
+#     t.write(names[:-1])
 
 def getinvdict(f):
     """Return a dictionary created from a csv file."""
@@ -11,7 +51,9 @@ def getinvdict(f):
     invdict = {v: k for k, v in redict.items()}
     return invdict
 
-csv_folder = Path('csv')
+scriptpath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
+print('Script at path ' + str(scriptpath))
+csv_folder = scriptpath / 'csv'
 # Import all the dictionaries from attatched CSVs
 demoji = getinvdict(csv_folder / 'emoji_hex.csv')
 dcolor = getinvdict(csv_folder / 'color_hex.csv')
@@ -21,20 +63,6 @@ dnumber = getinvdict(csv_folder / 'number_hex.csv')
 dnames = getinvdict(csv_folder / 'names_hex.csv')
 dsizes = getinvdict(csv_folder / 'sizes_hex.csv')
 dplumber = getinvdict(csv_folder / 'plumber_hex.csv')
-
-try:
-    xmlfilepath = sys.argv[1]
-    folder = xmlfilepath[0:xmlfilepath.rfind('\\') + 1]
-except:
-    raise Exception('Please input a file.')
-
-print('Folder: ' + folder)
-
-tree = ET.parse(xmlfilepath)
-root = tree.getroot()
-
-if root.tag != 'MESGbmg1':
-    raise Exception('Please input a valid MESGbmg1 XML file.')
 
 def packtuple(t):
     """Pack a string tuple into a bytearray"""
@@ -65,6 +93,7 @@ for event, elem in ET.iterparse(xmlfilepath, events=('start','end')):
                 dat1.extend(b'\x00\x00')
                 text = bytearray()
             else:
+                # If it's blank, replace the pointer with a pointer to 0.
                 inf1 = inf1[:-12]
                 inf1.extend(packtuple(elem.get('info')))
                 inf1.extend(b'\x00\x00\x00\x00')
@@ -95,7 +124,7 @@ for event, elem in ET.iterparse(xmlfilepath, events=('start','end')):
                     text.extend(b'\x06\x04')
                     text.extend(struct.pack('>H', int(dsizes.get(elem.get('name')))))
                 elif tag == 5:
-                    text.extend(b'\x08\x05')
+                    text.extend(b'\x08\x05')     # Plumber names
                     text.extend(struct.pack('>I', int(dplumber.get(elem.get('style')))))
                 elif tag == 6 or tag == 7:
                     text.extend(b'\x0e')
@@ -132,7 +161,17 @@ while (len(dat1) - 8) % 32 != 0:
 #     dfile.write(struct.pack('>I', len(dat1) + 8))
 #     dfile.write(dat1)
 
-with open('message_output.bmg', 'wb') as mfile:
+flbytes = bytearray()
+# Get the fl sections at the end using the existing bmg,
+# because I have no idea what they actually mean.
+with open(folder + 'message.bmg', 'rb') as fget:
+    fget.seek(8)
+    flwoffset = struct.unpack('>I', fget.read(4))[0]
+    fget.seek(flwoffset)
+    # save flbytes for later because we're gonna overwrite the file
+    flbytes = fget.read()
+
+with open(folder + 'message.bmg', 'wb') as mfile:
     mfile.write(b'MESGbmg1')
     mfile.write(struct.pack('>I', len(inf1) + len(dat1) + 16 + 8 + 32))
     mfile.write(b'\x00\x00\x00\x04')
@@ -148,25 +187,6 @@ with open('message_output.bmg', 'wb') as mfile:
     mfile.write(struct.pack('>I', len(dat1) + 8))
     mfile.write(dat1)
 
-    with open(folder + 'message.bmg', 'rb') as fget:
-        fget.seek(8)
-        flwoffset = struct.unpack('>I', fget.read(4))[0]
-        fget.seek(flwoffset)
-        mfile.write(fget.read())
+    mfile.write(flbytes)
 
 # # # 
-# Um yeah I'm doing the message names in a second function
-
-ids = bytearray()
-names = bytearray()
-names.append(0)
-num = 1
-
-for event, elem in ET.iterparse(xmlfilepath, events=('start','end')):
-    if elem.tag == 'message' and event == 'start':
-        ids.extend(struct.pack('>I',num)) 
-        num += 1
-        ids.extend(struct.pack('>I',len(names)))
-        names.extend(str(elem.get('name')).encode('utf_8'))
-        names.append(0)
-

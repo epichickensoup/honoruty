@@ -1,5 +1,6 @@
 import struct
 import csv
+import os
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -10,7 +11,10 @@ def getdict(f):
     redict = dict(source)
     return redict
 
-csv_folder = Path('csv')
+scriptpath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
+print('Script at path:')
+print(scriptpath)
+csv_folder = scriptpath / 'csv'
 # Import all the dictionaries from attatched CSVs
 demoji = getdict(csv_folder / 'emoji_hex.csv')
 dcolor = getdict(csv_folder / 'color_hex.csv')
@@ -204,11 +208,12 @@ with open(messagefilepath, mode='rb') as f:
             if not thismsginf in infsearchlist:
                 infsearchlist.append(thismsginf)
                 infsearch = infsearch + str(thismsginf) + '\n'
-        with open('allusedinfsections.txt','w') as a:
-            # allsoundids.sort()
-            a.write(infsearch)
-            soundsearch = []
-            infsearch = ''
+        # Uncomment the following if you'd like to research message properties.
+        # with open('allusedinfsections.txt','w') as a:
+        #     # allsoundids.sort()
+        #     a.write(infsearch)
+        #     soundsearch = []
+        #     infsearch = ''
 
         allblanknames = ''
         print("Creating XML from message.bmg...")
@@ -231,15 +236,15 @@ with open(messagefilepath, mode='rb') as f:
         
         print("Done.")
         tree = ET.ElementTree(root)
-        tree.write(folder + 'messages_beta.xml', encoding='utf-8')
+        tree.write(folder + 'message.xml', encoding='utf-8')
 
         print("Fixing XML because I was lazy...")
         # Unfilter the created XML.  Hopefully y'all didn't use any greater/less-than symbols!
-        readstr = ""
-        with open(folder + 'messages_beta.xml','r',encoding='utf-8') as msgfile:
+        readstr = ''
+        with open(folder + 'message.xml','r',encoding='utf-8') as msgfile:
             readstr = msgfile.read()
             readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n     <message ').replace('</messageBMG>', '\n</messageBMG>')
-        with open(folder + 'messages_beta.xml','w',encoding='utf-8') as msgfile:
+        with open(folder + 'message.xml','w',encoding='utf-8') as msgfile:
             msgfile.write(readstr)
             print("Done.")
 
