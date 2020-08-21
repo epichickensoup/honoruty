@@ -5,15 +5,26 @@ import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+def error(string):
+    print('\nError!',string,'\n')
+    if os.name == 'nt': #if windows
+        os.system('pause')
+    else: #assume posix, even though nothing else supports it :P
+        os.system('read -n1 -r -p "Press any key to continue..."')
+    quit(-1)
+
 def getdict(f):
     """Return a dictionary created from a csv file."""
-    source = csv.reader(open(f))
-    redict = dict(source)
-    return redict
+    try:
+        source = csv.reader(open(f))
+        redict = dict(source)
+        return redict
+    except:
+        error('CSV file at "' + str(f) + '" not found! \nMake sure the "csv" folder is present in the executable directory.')
 
 scriptpath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
-print('Script at path:')
-print(scriptpath)
+#print('Script at path:')
+#print(scriptpath)
 csv_folder = scriptpath / 'csv'
 # Import all the dictionaries from attatched CSVs
 demoji = getdict(csv_folder / 'emoji_hex.csv')
@@ -25,18 +36,22 @@ dnames = getdict(csv_folder / 'names_hex.csv')
 dsizes = getdict(csv_folder / 'sizes_hex.csv')
 dplumber = getdict(csv_folder / 'plumber_hex.csv')
 
+debug = False
+
 def getmsgname(id):
-    pid = id
+    pid = id        # this will start as 1
     retname = ''
-    if pid < msgnum:
-        msgnameoffset = struct.unpack('>I', idtbloffset(40 + pid * 8 + 4, 4))[0]
-        # print('offset ' + str(msgnameoffset))
-        b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + msgnum * 8, 1))[0]
+    if pid < msgnum:    # if the message exists...
+        msgnameoffset = struct.unpack('>I', idtbloffset(40 + (pid * 8) + 4, 4))[0]
+        if id < 42:
+            if debug:
+                print('offset ' + str(msgnameoffset))          # \/ might be the problem?
+        b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + (msgnum * 8), 1))[0]
         i = 0
-        while b != 0 and b != 40:
+        while b != 0 and b != 40: # if not a null or an @ char, add it to the name
             retname = retname + chr(b)
             i = i + 1
-            b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + msgnum * 8 + i, 1))[0]
+            b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + (msgnum * 8) + i, 1))[0]
     return retname
 
 def idtbloffset(o, l):
@@ -133,7 +148,7 @@ def getmsg(id):
                 # dcolor.get(, dcolor.get("more"))
             else:
                 # It's gonna show me any binary things I haven't gotten yet
-                print("Oops, apparently I missed an element with ID " + str(idtuple))
+                print('Oops, apparently I missed an element with ID "' + str(idtuple)'", please report this on Github.')
             # So this is super cool... they put the offset to the next normal text in the first byte after 001A.
             # Thus, this will automatically skip any weird characters... our XML is officially valid now!
             # but I should probably still add all the idtuple[1] values I can find for full support
@@ -152,35 +167,41 @@ def getmsg(id):
 
 try:
     messagefilepath = sys.argv[1]
-    folder = messagefilepath[0:messagefilepath.rfind('\\') + 1]
 except:
-    raise Exception('Please input a file.')
+    error('Please input a file.')
+indexlasttick = messagefilepath.rfind('\\')
+folder = messagefilepath[0:indexlasttick + 1]
+filename = messagefilepath[indexlasttick + 1:]
+filename = filename[0:filename.rfind('.')]
 
 with open(messagefilepath, mode='rb') as f:
     # Get the 'file magic' to display the file type
     magic = offset(0,8)
     print(str(magic))
     if str(magic) != "b'MESGbmg1'":
-        raise Exception("Please input a valid BMG file.")
+        error('Please input a BMG type file.')
     totalbytelen = struct.unpack('>I', offset(8, 4))[0]
-    print('Length of file in bytes is ' + str(totalbytelen))
-    # Total length in bytes is the offset of the FLW1 header
-    print('so I guess it ignores everything past ' + str(offset(totalbytelen, 4)) + '?')
+    if debug:
+        print('Length of file in bytes is ' + str(totalbytelen))
+        # Total length in bytes is the offset of the FLW1 header
+        print('so I guess it ignores everything past ' + str(offset(totalbytelen, 4)) + '?')
     #sections = struct.unpack('>I', offset('0C', 4))[0]
     #print('OK there are ' + str(sections) + ' sections (should be 4 for SMG!)')
     slen = struct.unpack('>H', offset('2A',2))[0]
-    print('The length of each ID is ' + str(slen))
-    print('The first message inf is ' + str(getfullmsginf(0)))
+    if debug:
+        print('The length of each ID is ' + str(slen))
+        print('The first message inf is ' + str(getfullmsginf(0)))
     # Offset of DAT1 section is length of INF1 plus 32 bytes
     dat1o = 32 + struct.unpack('>I', offset(36, 4))[0]
-    print('Offset of DAT1 section is ' + str(dat1o))
-    print('\n')
+    if debug:
+        print('Offset of DAT1 section is ' + str(dat1o))
+        print('\n')
 
     msgnum = struct.unpack('>H', offset('28', 2))[0]
-    print('There are ' + str(msgnum) + ' messages in the file')
+    print('There are ' + str(msgnum) + ' messages in the file.')
     
     # print("\nTesting escape sequences:")
-    print(getmsg(2))
+    #print(getmsg(2))
 
     # This next section makes the xml
     root = ET.Element('MESGbmg1')
@@ -216,7 +237,7 @@ with open(messagefilepath, mode='rb') as f:
         #     infsearch = ''
 
         allblanknames = ''
-        print("Creating XML from message.bmg...")
+        print('Creating XML from ' + filename + '.bmg...')
         i = 0
         while i < msgnum:
             i = i + 1
@@ -236,15 +257,15 @@ with open(messagefilepath, mode='rb') as f:
         
         print("Done.")
         tree = ET.ElementTree(root)
-        tree.write(folder + 'message.xml', encoding='utf-8')
+        tree.write(folder + filename + '.xml', encoding='utf-8')
 
         print("Fixing XML because I was lazy...")
         # Unfilter the created XML.  Hopefully y'all didn't use any greater/less-than symbols!
         readstr = ''
-        with open(folder + 'message.xml','r',encoding='utf-8') as msgfile:
+        with open(folder + filename + '.xml','r',encoding='utf-8') as msgfile:
             readstr = msgfile.read()
             readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n     <message ').replace('</messageBMG>', '\n</messageBMG>')
-        with open(folder + 'message.xml','w',encoding='utf-8') as msgfile:
+        with open(folder + filename + '.xml','w',encoding='utf-8') as msgfile:
             msgfile.write(readstr)
             print("Done.")
 
