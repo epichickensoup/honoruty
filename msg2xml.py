@@ -27,6 +27,7 @@ scriptpath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
 #print(scriptpath)
 csv_folder = scriptpath / 'csv'
 # Import all the dictionaries from attatched CSVs
+print('Fetching CSV files...')
 demoji = getdict(csv_folder / 'emoji_hex.csv')
 dcolor = getdict(csv_folder / 'color_hex.csv')
 dpause = getdict(csv_folder / 'pause_hex.csv')
@@ -35,27 +36,29 @@ dnumber = getdict(csv_folder / 'number_hex.csv')
 dnames = getdict(csv_folder / 'names_hex.csv')
 dsizes = getdict(csv_folder / 'sizes_hex.csv')
 dplumber = getdict(csv_folder / 'plumber_hex.csv')
+print('All CSV files loaded.')
 
 debug = False
 
 def getmsgname(id):
-    pid = id        # this will start as 1
+    pid = id        # this will start at 1
     retname = ''
-    if pid < msgnum:    # if the message exists...
-        msgnameoffset = struct.unpack('>I', idtbloffset(40 + (pid * 8) + 4, 4))[0]
-        if id < 42:
-            if debug:
-                print('offset ' + str(msgnameoffset))          # \/ might be the problem?
-        b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + (msgnum * 8), 1))[0]
+    startofnames = 32 + ((msgnum + 1) * 8) # msgnum +1 because the blank message is unaccounted for???
+    if pid < (msgnum + 1):    # if the message exists...
+        msgnameoffset = struct.unpack('>I', idtbloffset(32 + (pid * 8) + 4, 4))[0]  # Without that +4, reads the message id.
+                                                                                    # Get what the file says is the location of the name.
+
+        b = struct.unpack('>B', idtbloffset(startofnames + msgnameoffset, 1))[0]  # Get the first character of the text.
+                                                                                  # Do this by adding the file-given offset to the position the text pool starts at.
         i = 0
         while b != 0 and b != 40: # if not a null or an @ char, add it to the name
             retname = retname + chr(b)
             i = i + 1
-            b = struct.unpack('>B', idtbloffset(msgnameoffset + 40 + (msgnum * 8) + i, 1))[0]
+            b = struct.unpack('>B', idtbloffset(startofnames + msgnameoffset + i, 1))[0]
     return retname
 
 def idtbloffset(o, l):
-    """Get bytes of messageid.tbl at offset o for length l."""
+    """Get bytes of the messageid tbl at offset o for length l."""
     msgidtbl.seek(o)
     return msgidtbl.read(l)
 
@@ -90,7 +93,7 @@ def getmsg(id):
     result = ""
     inc = 0
     curmsgoff = getmsgoff(id)
-    bb = struct.unpack('>BB', offset(dat1o + 8 + curmsgoff, 2))
+    bb = struct.unpack('>BB', offset(dat1o + 8 + curmsgoff, 2)) # get two-byte character
     # Check each 2 bytes and add the char to the result, but stop on a null double byte
     while bb != (0,0):
         # print(bb)
@@ -148,7 +151,7 @@ def getmsg(id):
                 # dcolor.get(, dcolor.get("more"))
             else:
                 # It's gonna show me any binary things I haven't gotten yet
-                print('Oops, apparently I missed an element with ID "' + str(idtuple)'", please report this on Github.')
+                print('Oops, apparently I missed an element with ID "' + str(idtuple) + '", please report this on Github.')
             # So this is super cool... they put the offset to the next normal text in the first byte after 001A.
             # Thus, this will automatically skip any weird characters... our XML is officially valid now!
             # but I should probably still add all the idtuple[1] values I can find for full support
@@ -177,7 +180,8 @@ filename = filename[0:filename.rfind('.')]
 with open(messagefilepath, mode='rb') as f:
     # Get the 'file magic' to display the file type
     magic = offset(0,8)
-    print(str(magic))
+    if debug:
+        print(str(magic))
     if str(magic) != "b'MESGbmg1'":
         error('Please input a BMG type file.')
     totalbytelen = struct.unpack('>I', offset(8, 4))[0]
@@ -205,8 +209,18 @@ with open(messagefilepath, mode='rb') as f:
 
     # This next section makes the xml
     root = ET.Element('MESGbmg1')
-    with open(folder + 'messageid.tbl','rb') as msgidtbl:
-
+    
+    try: # Try to open {filename}.tbl
+        msgidtbl = open(folder + filename + '.tbl', 'rb')
+    except:
+        try: # Try to open {filename}id.tbl
+            msgidtbl = open(folder + filename + 'id.tbl', 'rb')
+        except: 
+            try: # Finally, try to open messageid.tbl
+                msgidtbl = open(folder + 'messageid.tbl','rb')
+            except: 
+                error('Did not find messageid.tbl. Please make sure it is in the same directory as your BMG file.')
+    with msgidtbl: # I should put an error for if it can't find this file!
         # allmsginf = ''
         # soundid = int(input("Search for sound "))
         soundid = 255
@@ -240,14 +254,15 @@ with open(messagefilepath, mode='rb') as f:
         print('Creating XML from ' + filename + '.bmg...')
         i = 0
         while i < msgnum:
-            i = i + 1
             temptext = getmsg(i)
+            i = i + 1
             # if temptext != '':
             s = ET.SubElement(root, 'message')
             s.set('name', getmsgname(i))
             s.set('info', str(getfullmsginf(i)))
             # s.set('flow', str(getmsgflw(i)))    
             s.text = temptext
+            
         #     else:
         #         allblanknames = allblanknames + getmsgname(i) + '\n'
         
@@ -264,7 +279,7 @@ with open(messagefilepath, mode='rb') as f:
         readstr = ''
         with open(folder + filename + '.xml','r',encoding='utf-8') as msgfile:
             readstr = msgfile.read()
-            readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n     <message ').replace('</messageBMG>', '\n</messageBMG>')
+            readstr = readstr.replace('&gt;', '>').replace('&lt;', '<').replace('<message ', '\n     <message ').replace('</MESGbmg1>', '\n</MESGbmg1>')
         with open(folder + filename + '.xml','w',encoding='utf-8') as msgfile:
             msgfile.write(readstr)
             print("Done.")
