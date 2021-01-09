@@ -14,3 +14,8 @@ A message editor for SMG1.
 At the moment, _please do not add entries to the XML file!_ This program does not edit `messageid.tbl` and thus can _not_ properly handle additional messages.  (I may add that in later.)
 
 If you need to know a name or identifier for any particular thing (color, emoji, whatever), check the files in the [CSV folder](https://github.com/epichickensoup/honoruty/tree/master/csv). You can also edit these to your liking, just make sure you know what you're doing as it will be harder to help you with problems.
+
+
+---
+
+Thanks to [froggo](https://github.com/gayfrogog/) for the command in the bat files (the ones in the repo, not in the release).
