@@ -9,7 +9,7 @@ def error(string):
     if os.name == 'nt': #if windows
         os.system('pause')
     else: #assume posix, even though nothing else supports it :P
-        os.system('read -n1 -r -p "Press any key to continue..."')
+        os.system('read -n1 -r -p "Press any key to continue . . ."')
     quit(-1)
 
 def getdict(f):
@@ -21,7 +21,7 @@ def getdict(f):
     except:
         error('CSV file at "' + str(f) + '" not found! \nMake sure the "csv" folder is present in the executable directory.')
 
-scriptpath = Path(os.path.dirname(os.path.realpath(sys.argv[0])))
+scriptpath = Path(os.path.dirname(os.path.realpath(sys.argv[0]))).parents[0]
 csv_folder = scriptpath / 'csv'
 # Import all the dictionaries from attatched CSVs
 print('Fetching CSV files...')
@@ -93,9 +93,8 @@ def getmsg(id):
     bb = struct.unpack('>BB', offset(dat1o + 8 + curmsgoff, 2)) # get two-byte character
     # Check each 2 bytes and add the char to the result, but stop on a null double byte
     while bb != (0,0):
-        # print(bb)
         if bb == (0, 26):
-            # print('Found an escape char')
+            # Found an escape char
             idtuple = struct.unpack('>BB', offset(dat1o + 10 + curmsgoff + inc, 2))
             result = result + '[' + dnames.get(str(idtuple[1]), dnames.get('more')) + ' '
             if idtuple[1] == 1:
@@ -116,10 +115,8 @@ def getmsg(id):
                     miniinc = miniinc + 2
                 result = result + animname
             elif idtuple[1] == 3:
-                # print("It's an emoji")
+                # It's an emoji
                 emojiid = struct.unpack('>H', offset(dat1o + 12 + curmsgoff + inc, 2))[0]
-                # print(str(emojiid))
-                # print('<emoji name="' + demoji.get(str(emojiid), demoji.get("more")) + '"/>')
                 result = result + demoji.get(str(emojiid), demoji.get('more'))
             elif idtuple[1] == 4:
                 # There are 2 sizes they use... but I'll bet there are 3!  Anyway... sizes.
@@ -186,8 +183,9 @@ with open(messagefilepath, mode='rb') as f:
         print('Length of file in bytes is ' + str(totalbytelen))
         # Total length in bytes is the offset of the FLW1 header
         print('so I guess it ignores everything past ' + str(offset(totalbytelen, 4)) + '?')
-    #sections = struct.unpack('>I', offset('0C', 4))[0]
-    #print('OK there are ' + str(sections) + ' sections (should be 4 for SMG!)')
+    if debug:
+        sections = struct.unpack('>I', offset('0C', 4))[0]
+        print('OK there are ' + str(sections) + ' sections (should be 4 for SMG!)')
     slen = struct.unpack('>H', offset('2A',2))[0]
     if debug:
         print('The length of each ID is ' + str(slen))
@@ -200,9 +198,6 @@ with open(messagefilepath, mode='rb') as f:
 
     msgnum = struct.unpack('>H', offset('28', 2))[0]
     print('There are ' + str(msgnum) + ' messages in the file.')
-    
-    # print("\nTesting escape sequences:")
-    #print(getmsg(2))
 
     # This next section made the xml and now makes a csv instead
     
@@ -217,35 +212,6 @@ with open(messagefilepath, mode='rb') as f:
             except: 
                 error('Did not find messageid.tbl. Please make sure it is in the same directory as your BMG file.')
     with msgidtbl: # I should put an error for if it can't find this file!
-        # allmsginf = ''
-        # soundid = int(input("Search for sound "))
-        soundid = 255
-        soundsearch = []
-        infsearch = ''
-        infsearchlist = []
-        i = 0
-        while i < msgnum:
-            i = i + 1
-            # allmsginf = allmsginf + "{0:0=4d}".format(i) + ': ' + str(getfullmsginf(i)) + ' ' + getmsgname(i) + '\n'
-            # tempcursoundid = getfullmsginf(i)[2]
-            # if not tempcursoundid in allsoundids:
-            #     allsoundids.append(tempcursoundid)
-            #     allsoundids.append(getmsgname(i))
-            # if tempcursoundid == soundid:
-                # gotname = getmsgname(i)
-                # print(gotname)
-                # soundsearch.append(gotname)
-            thismsginf = getfullmsginf(i)
-            if not thismsginf in infsearchlist:
-                infsearchlist.append(thismsginf)
-                infsearch = infsearch + str(thismsginf) + '\n'
-        # Uncomment the following if you'd like to research message properties.
-        # with open('allusedinfsections.txt','w') as a:
-        #     # allsoundids.sort()
-        #     a.write(infsearch)
-        #     soundsearch = []
-        #     infsearch = ''
-
         allblanknames = ''
         print('Creating CSV from ' + filename + '.bmg...')
         csvlines = []
@@ -265,17 +231,10 @@ with open(messagefilepath, mode='rb') as f:
             for value in fullmsginf:
                 line += str(value)
                 line += ','
-            # s.set('flow', str(getmsgflw(i)))    
+              
             if len(temptext) > 0:
                 line += '"' + temptext + '"'
             csvlines.append(line)
-            
-        #     else:
-        #         allblanknames = allblanknames + getmsgname(i) + '\n'
-        
-        # with open('allblankmessagenames.txt','w') as a:
-        #     a.write(allblanknames)
-        #     allblanknames = ''
         
         print("Done.")
 
@@ -284,9 +243,3 @@ with open(messagefilepath, mode='rb') as f:
         with open(folder + filename + '.csv','w',encoding='utf-8') as msgfile:
             msgfile.write('\n'.join(csvlines))
             print("Done.")
-
-        # nvm: minidom pretty print? more like minidom ugly print xd
-        # # OK so xmlstr doesn't like invalid chars, so we're gonna have to filter those out first
-        # xmlstr = minidom.parseString(readstr).toprettyxml(indent="   ")
-        # with open('messages_beta.xml', 'w') as outputfile:
-        #     outputfile.write(xmlstr)
