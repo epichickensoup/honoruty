@@ -3,7 +3,6 @@ import csv
 import os
 import sys
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
 def error(string):
     print('\nError!',string,'\n')
