@@ -10,7 +10,7 @@ def error(string):
         os.system('pause')
     else: #assume posix, even though nothing else supports it :P
         os.system('read -n1 -r -p "Press any key to continue . . ."')
-    quit(-1)
+    quit()
 
 def getdict(f):
     """Return a dictionary created from a csv file."""
@@ -40,13 +40,16 @@ debug = False
 def getmsgname(id):
     pid = id        # this will start at 1
     retname = ''
-    startofnames = 32 + ((msgnum + 1) * 8) # msgnum +1 because the blank message is unaccounted for???
+    startofnames = 32 + ((msgtblnum + 1) * 8) # msgnum +1 because the blank message is unaccounted for???
     if pid < (msgnum + 1):    # if the message exists...
         msgnameoffset = struct.unpack('>I', idtbloffset(32 + (pid * 8) + 4, 4))[0]  # Without that +4, reads the message id.
                                                                                     # Get what the file says is the location of the name.
+        try:
+            b = struct.unpack('>B', idtbloffset(startofnames + msgnameoffset, 1))[0]  # Get the first character of the text.
+                                                                                        # Do this by adding the file-given offset to the position the text pool starts at.
+        except:
+            error('Failed to read name of message ' + str(id) + ' from ' + hex(startofnames + msgnameoffset) + ' (as listed at ' + hex(32 + (pid * 8) + 4) + ')')
 
-        b = struct.unpack('>B', idtbloffset(startofnames + msgnameoffset, 1))[0]  # Get the first character of the text.
-                                                                                  # Do this by adding the file-given offset to the position the text pool starts at.
         i = 0
         while b != 0 and b != 40: # if not a null or an @ char, add it to the name
             retname = retname + chr(b)
@@ -77,7 +80,9 @@ def getmsginf(id):
     return tempinf
 
 def getfullmsginf(id) -> tuple:
-    return struct.unpack('>BBBBBBBB', offset(48 + ((id - 1) * slen) + 4, slen - 4)) # + ("offset", hex(48 + (id * slen) + 4))
+    camerashort = struct.unpack('>H', offset(48 + ((id - 1) * slen) + 4, 2))
+    otherinf = struct.unpack('>BBBBBB', offset(48 + ((id - 1) * slen) + 4 + 2, slen - 6))
+    return (camerashort + otherinf) # combines the two tuples # + ("offset", hex(48 + (id * slen) + 4))
 
 def getmsgoff(id):
     """Gets the offset into DAT1 of a message."""
@@ -197,7 +202,7 @@ with open(messagefilepath, mode='rb') as f:
         print('\n')
 
     msgnum = struct.unpack('>H', offset('28', 2))[0]
-    print('There are ' + str(msgnum) + ' messages in the file.')
+    print('There are ' + str(msgnum) + ' messages in the BMG file.') 
 
     # This next section made the xml and now makes a csv instead
     
@@ -212,6 +217,9 @@ with open(messagefilepath, mode='rb') as f:
             except: 
                 error('Did not find messageid.tbl. Please make sure it is in the same directory as your BMG file.')
     with msgidtbl: # I should put an error for if it can't find this file!
+        msgtblnum = struct.unpack('>H', idtbloffset(2, 2))[0]
+        print('There are ' + str(msgtblnum) + ' messages in the TBL file.')
+
         allblanknames = ''
         print('Creating CSV from ' + filename + '.bmg...')
         csvlines = []
@@ -221,9 +229,13 @@ with open(messagefilepath, mode='rb') as f:
             temptext = getmsg(i).replace('\n', '\\n')
             i = i + 1 # I don't like this, it should be at the end...
             
-            msgname = getmsgname(i)
+            if i < (msgtblnum + 1):
+                msgname = getmsgname(i)
+            else:
+                msgname = "[inf1tocsv.py: MISSING MESSAGE NAME]"
+                print('WARNING: A message name is missing!')
             if len(msgname) > 0:
-                line += '"' + getmsgname(i) + '",'
+                line += '"' + msgname + '",'
             else:
                 line += ','
             
