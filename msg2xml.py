@@ -205,7 +205,7 @@ def getmsg(id):
             result = result + '/>'
         else:
             # Add the character to the message. The music note is a utf-16 character!
-            result = result + charbytes.decode('utf-16-be')
+            result = result + '</note>'# charbytes.decode('utf-16-be') temp fix until xml2msg is not dumb
             inc = inc + 2
         charbytes = bytearray(offset(dat1o + 8 + curmsgoff + inc, 2))
         bb = struct.unpack('>BB', offset(dat1o + 8 + curmsgoff + inc, 2))
